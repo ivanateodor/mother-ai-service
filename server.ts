@@ -16,9 +16,12 @@ const ALLOW_ORIGINS = (process.env.ALLOW_ORIGINS || "")
 
 app.use(
   cors({
-    origin(origin: string | undefined, cb) {
-      if (!origin || ALLOW_ORIGINS.includes(origin)) cb(null, true);
-      else cb(null, false);
+    origin(
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) {
+      if (!origin || ALLOW_ORIGINS.includes(origin)) callback(null, true);
+      else callback(null, false);
     },
     credentials: false,
   })
