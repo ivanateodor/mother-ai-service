@@ -14,18 +14,12 @@ const ALLOW_ORIGINS = (process.env.ALLOW_ORIGINS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin(
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void
-    ) {
-      if (!origin || ALLOW_ORIGINS.includes(origin)) callback(null, true);
-      else callback(null, false);
-    },
-    credentials: false,
-  })
-);
+app.use(cors({
+  origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    if (!origin || ALLOW_ORIGINS.includes(origin)) callback(null, true);
+    else callback(null, false);
+  }
+}));
 
 const WIDGET_TOKEN = process.env.WIDGET_TOKEN || "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
