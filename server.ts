@@ -4,7 +4,8 @@ import cors from "cors";
 import OpenAI from "openai";
 import { tools } from "./lib/tools.js";
 import { veritasAsk, trendBrief } from "./lib/agents.js";
-import { upsertDocument, retrieve, toContext } from "./lib/rag.js";
+import { retrieve, toContext } from "./lib/rag.js";
+
 
 const app = express();
 app.use(express.json());
