@@ -4,6 +4,7 @@ import cors from "cors";
 import OpenAI from "openai";
 import { tools } from "./lib/tools.js";
 import { veritasAsk, trendBrief } from "./lib/agents.js";
+import { upsertDocument, retrieve, toContext } from "./lib/rag.js";
 
 const app = express();
 app.use(express.json());
@@ -77,6 +78,21 @@ app.post("/api/ask", async (req: Request, res: Response) => {
   }
 
   return res.json({ text: choice.message.content ?? "" });
+});
+
+// 1) simple loader (POST /api/docs) for plain text
+app.post("/api/docs", async (req: Request, res: Response) => {
+  const { docId, source, text } = req.body ?? {};
+  if (!docId || !text) return res.status(400).json({ error: "docId and text are required" });
+  const n = await upsertDocument({ docId, source: source || docId, text });
+  res.json({ ok: true, chunks: n });
+});
+
+// (optional) test retrieval
+app.get("/api/search", async (req: Request, res: Response) => {
+  const q = String(req.query.q || "");
+  const hits = await retrieve(q, 5);
+  res.json({ q, hits: hits.map(h => ({ id: h.id, source: h.source, text: h.text.slice(0,200)+"..." })) });
 });
 
 const port = process.env.PORT || 3000;
