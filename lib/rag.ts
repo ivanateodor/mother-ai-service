@@ -1,3 +1,4 @@
+// lib/rag.ts
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
@@ -5,16 +6,14 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 export type Chunk = {
   id: string;
   docId: string;
-  source: string;         // filename or URL
+  source: string;
   text: string;
   embedding: number[];
 };
 
-// super simple in-memory store (replace with pgvector later)
 const CHUNKS: Chunk[] = [];
 
 export function simpleChunk(text: string, maxChars = 1200): string[] {
-  // naive split by paragraphs, then merge up to ~maxChars
   const paras = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
   const out: string[] = [];
   let buf = "";
@@ -39,13 +38,7 @@ export async function upsertDocument({ docId, source, text }: { docId: string; s
   const parts = simpleChunk(text);
   const vecs = await embedTextBatch(parts);
   parts.forEach((t, i) => {
-    CHUNKS.push({
-      id: `${docId}:${i}`,
-      docId,
-      source,
-      text: t,
-      embedding: vecs[i]
-    });
+    CHUNKS.push({ id: `${docId}:${i}`, docId, source, text: t, embedding: vecs[i] });
   });
   return parts.length;
 }
@@ -63,7 +56,6 @@ export async function retrieve(query: string, k = 5) {
   return scored.slice(0, k).map(s => s.c);
 }
 
-// helper to build a context block + lightweight citations
 export function toContext(chunks: Chunk[]) {
   const refs = chunks.map((c, i)=> `[${i+1}] ${c.source}`).join("\n");
   const ctx  = chunks.map((c, i)=> `# [${i+1}] ${c.source}\n${c.text}`).join("\n\n---\n\n");
