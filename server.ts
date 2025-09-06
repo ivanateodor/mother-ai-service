@@ -5,7 +5,7 @@ import OpenAI from "openai";
 import { tools } from "./lib/tools.js";
 import { veritasAsk, trendBrief } from "./lib/agents.js";
 import { retrieve, toContext } from "./lib/rag.js";
-
+import { upsertDocument, retrieve, toContext } from "./lib/rag.js";
 
 const app = express();
 app.use(express.json());
@@ -98,3 +98,18 @@ app.get("/api/search", async (req: Request, res: Response) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Mother AI listening on :${port}`));
+
+// POST /api/docs  -> load plain text into memory (RAG)
+app.post("/api/docs", async (req: Request, res: Response) => {
+  const { docId, source, text } = req.body ?? {};
+  if (!docId || !text) return res.status(400).json({ error: "docId and text are required" });
+  const n = await upsertDocument({ docId, source: source || docId, text });
+  res.json({ ok: true, chunks: n });
+});
+
+// (optional) quick search to sanity-check retrieval
+app.get("/api/search", async (req: Request, res: Response) => {
+  const q = String(req.query.q || "");
+  const hits = await retrieve(q, 5);
+  res.json({ q, hits: hits.map(h => ({ id: h.id, source: h.source, text: h.text.slice(0, 200) + "..." })) });
+});
